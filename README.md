@@ -2,7 +2,7 @@
 
 Complete static website export, 30 September 2026.
 Updated: legal-requirement framing (Solid Waste Management Rules 2016), a "Proven elsewhere" section with sourced examples from India and abroad, and a cost planner calibrated to field data from Indian plants.
-Includes the project brief, animated resource-loop graphic, interactive system diagram and cost planner.
+A short, interactive page: the main page says the three things that matter (required by law, good for the planet, produces resources). Details open on click: expandable cards, a clickable loop, tabbed project examples, a cost planner with optional extra inputs, and slide-in panels for the full brief.
 
 ## Publish on GitHub Pages
 

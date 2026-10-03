@@ -148,6 +148,7 @@
   }));
   $('operator').addEventListener('input', () => { operatorEdited = true; });
   $('apply-package').addEventListener('click', () => {
+    document.querySelector('.more-inputs').open = true;
     $('thick').checked = PACKAGE.thick;
     $('outside').value = Math.round(Number($('families').value) * Number($('people').value) * .15 * PACKAGE.outsideShare);
     $('fee').value = PACKAGE.fee; $('compost-price').value = PACKAGE.compostPrice;
@@ -210,7 +211,7 @@
       const index = [...entry.target.parentElement.children].indexOf(entry.target) % 4;
       entry.target.animate([{opacity:0,transform:'translateY(22px)'},{opacity:1,transform:'translateY(0)'}],{duration:700,delay:index * 90,easing:ease,fill:'backwards'});
     }),{threshold:.12});
-    document.querySelectorAll('.section-head h2,.section-head>div>p,.value-strip article,.technology-list article,.delivery-list li,.operations,.impact-grid article,.mandate,.proof-grid article,.field-lesson,.run-flow li,.models article,.stats>div,.comparison article,.faq-list details,.assessment-list>div,.levers>div').forEach(el => reveal.observe(el));
+    document.querySelectorAll('.pillar,.proof-card,.detail-tile,.section-head h2,.section-head>div>p,.value-strip article,.technology-list article,.delivery-list li,.operations,.impact-grid article,.mandate,.proof-grid article,.field-lesson,.run-flow li,.models article,.stats>div,.comparison article,.faq-list details,.assessment-list>div,.levers>div').forEach(el => reveal.observe(el));
     const counters = new IntersectionObserver(entries => entries.forEach(entry => {
       if (!entry.isIntersecting) return;
       counters.unobserve(entry.target);
@@ -231,4 +232,58 @@
   const syncLoop = () => { if (!loop?.pauseAnimations) return; reduced.matches ? loop.pauseAnimations() : loop.unpauseAnimations(); };
   syncLoop();
   reduced.addEventListener('change', event => { syncLoop(); if(event.matches) document.getAnimations?.().forEach(animation => animation.cancel()); });
+
+  // "Why" cards expand in place.
+  document.querySelectorAll('.pillar-toggle').forEach(button => button.addEventListener('click', () => {
+    const open = button.getAttribute('aria-expanded') !== 'true', body = $(button.getAttribute('aria-controls'));
+    button.setAttribute('aria-expanded', String(open)); body.hidden = !open;
+    button.closest('.pillar').classList.toggle('is-open', open);
+    if (open && !reduced.matches && body.animate) body.animate([{opacity:0,transform:'translateY(-8px)'},{opacity:1,transform:'none'}],{duration:350,easing:ease});
+  }));
+  // Live resource figures for 1,000 families at field-proven output.
+  const ref = calculate(1000, 4.5, {setup:'hybrid', spend:null, hrt:30, rate:15000, tariff:8, thick:false, outside:0, fee:0, compostPrice:0, perf:'field'});
+  $('res-gas').textContent = fmt(ref.gas)+' m³'; $('res-power').textContent = fmt(ref.kwh)+' kWh'; $('res-compost').textContent = fmt(ref.compost)+' kg';
+  // Clickable stages on the hero loop.
+  const stages = {
+    homes:['Homes','Residents keep food waste separate in their kitchens; housekeeping staff collect it on their daily round.'],
+    sort:['Sort and shred','Bins are weighed and checked, then food waste is shredded and mixed with thickened STP sludge.'],
+    digester:['Digester','A sealed tank holds the mix for 25–30 days while bacteria turn it into biogas.'],
+    energy:['Energy','Cleaned biogas runs a generator for STP pumps, lighting and other common services.'],
+    compost:['Compost','What remains is dewatered, composted with garden waste and tested before reuse.']
+  };
+  const nodes = [...document.querySelectorAll('.loop-node[data-node]')];
+  const showStage = node => {
+    nodes.forEach(n => n.classList.toggle('is-active', n === node));
+    const [title, text] = stages[node.dataset.node];
+    $('loop-info').innerHTML = '<strong>'+title+'</strong> '+text;
+  };
+  nodes.forEach(node => {
+    node.addEventListener('click', () => showStage(node));
+    node.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showStage(node); } });
+  });
+  // India / world tabs on the proven section.
+  const tabs = [...document.querySelectorAll('[data-region]')];
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t === tab)));
+    document.querySelectorAll('[data-region-panel]').forEach(panel => { panel.hidden = panel.dataset.regionPanel !== tab.dataset.region; });
+  }));
+  // Slide-in detail panels.
+  const openPanel = dialog => { if (!dialog.open) { dialog.showModal(); dialog.querySelector('.drawer-body').scrollTop = 0; } };
+  document.querySelectorAll('[data-dialog]').forEach(button => button.addEventListener('click', () => openPanel($(button.dataset.dialog))));
+  document.querySelectorAll('dialog.drawer').forEach(dialog => {
+    dialog.querySelector('.drawer-close').addEventListener('click', () => dialog.close());
+    // Click on the dimmed backdrop closes the panel.
+    dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+    // In-page links inside a panel close it first, so the target is visible.
+    dialog.querySelectorAll('a[href^="#"]').forEach(link => link.addEventListener('click', () => dialog.close()));
+  });
+  // Old links to sections that now live in a panel open that panel.
+  const openFromHash = () => {
+    let target = null;
+    try { target = location.hash.length > 1 ? document.querySelector(location.hash) : null; } catch { return; }
+    const dialog = target?.closest('dialog');
+    if (dialog) openPanel(dialog);
+  };
+  addEventListener('hashchange', openFromHash);
+  openFromHash();
 })();
