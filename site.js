@@ -46,7 +46,7 @@
     return {mld, food, green, gas, kwh, feedM3, digesterM3, postM3, core, tanks, addon, automation, commissioning, central, low, high, power, disposal, fertilizer, staff, upkeep, lab, annual, om, net, payback:net > 0 ? central / net : Infinity, breakeven};
   }
   const lakh = value => (value < 0 ? '−' : '') + (Math.abs(value) >= 100 ? '₹'+fmt(Math.abs(value)/100,2)+' crore' : '₹'+fmt(Math.abs(value),2)+' lakh');
-  const years = value => Number.isFinite(value) ? fmt(value,1)+' years' : 'No payback';
+  const years = value => !Number.isFinite(value) ? 'No payback' : value > 30 ? 'Over 30 years' : fmt(value,1)+' years';
   const num = id => { const t = $(id).value.trim(); return t === '' ? NaN : Number(t); };
   const selectedSetup = () => document.querySelector('input[name="setup"]:checked').value;
   function updateEstimate() {
@@ -79,7 +79,7 @@
     $('setup-rows').innerHTML = Object.entries(SETUPS).map(([key, setup]) => {
       const s = calculate(homes, persons, {...o, setup:key, operator:undefined, maint:undefined});
       const figure = $('model-'+key); if (figure) figure.textContent = 'About '+lakh(s.central)+' for '+fmt(homes)+' homes · running cost '+lakh(s.om)+' a year';
-      return `<tr${key === o.setup ? ' class="is-current"' : ''}><th scope="row">${setup.name}</th><td>${lakh(s.central)}</td><td>₹${fmt(s.central*100000/homes)}</td><td>${lakh(s.om)}</td><td>${lakh(s.net)}</td><td>${years(s.payback)}</td></tr>`;
+      return `<tr${key === o.setup ? ' class="is-current"' : ''}><th scope="row">${setup.name}</th><td>${lakh(s.central)}</td><td>₹${fmt(s.central*100000/homes)}</td><td>${lakh(s.annual)}</td><td>${lakh(s.om)}</td><td>${lakh(s.net)}</td><td>${years(s.payback)}</td></tr>`;
     }).join('');
     [['core-bar','core'],['tank-bar','tanks'],['addon-bar','addon'],['auto-bar','automation'],['comm-bar','commissioning']].forEach(([id, key]) => $(id).style.flex = String(v[key] / v.central));
     $('quoteResult').hidden = !(quote > 0);
