@@ -49,6 +49,8 @@ The planner compares three setups (manual, hybrid, automated) and includes:
 - yearly running costs: extra operator time, maintenance and spares, lab testing and consumables;
 - value from net electricity (after the plant's own use), avoided disposal spend and fertilizer value.
 
+An "Improve the returns" block adds thicker sludge (smaller tanks), outside organic waste with a fee, and compost sales. A step-by-step table shows what each improvement adds, and a button applies the recommended package. Maintenance is charged on equipment rather than tanks, operator cost grows with tonnes handled, and food-waste equipment gets cheaper per kg above 1 tonne/day.
+
 Digester tank rate, automation packages, operator cost, maintenance rate and electricity value are planning placeholders. The advanced assumptions panel makes the main ones editable; replace them with vendor and site figures. Payback is simple and undiscounted, and excludes financing, taxes and major replacements. Carbon-credit revenue is excluded. Inputs outside 1,000–10,000 homes extrapolate the reference model. This is an early planning estimate, not a vendor quote or engineering design.
 
 The export contains only the standalone website and this guide. Existing hosting configuration, Git history, credentials and unused artwork are excluded.
