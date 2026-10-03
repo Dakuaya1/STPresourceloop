@@ -54,7 +54,7 @@
   const paths = [...diagram.querySelectorAll('.flow-paths path')];
   const buttons = [...document.querySelectorAll('[data-flow]')];
   const descriptions = {
-    collect:'Characterise the STP sludge and establish a dependable stream of segregated food waste. Remove contaminants and prepare a consistent feed before digestion.',
+    collect:'Residents segregate food waste at home and housekeeping staff collect it daily. At the plant it is weighed, checked and shredded, then mixed with thickened STP sludge into a consistent feed.',
     digest:'Microorganisms break down suitable organic feed without oxygen. The reactor design must maintain the loading, mixing and temperature conditions needed for dependable operation.',
     recover:'Clean captured biogas for generator use. Separate and treat digestate for a suitable outlet, and include the liquid return load in the STP design. Measure usable outputs and operating costs.'
   };
