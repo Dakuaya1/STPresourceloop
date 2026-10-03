@@ -1,7 +1,8 @@
 # STP Resource Loop
 
 Complete static website export, 30 September 2026.
-Includes the redesigned project brief, animated headline, interactive system diagram, cost calculator, narrated video and English captions.
+Updated: legal-requirement framing (Solid Waste Management Rules 2016), a "Proven elsewhere" section with sourced examples from India and abroad, and a cost planner calibrated to field data from Indian plants.
+Includes the project brief, animated resource-loop graphic, interactive system diagram and cost planner.
 
 ## Publish on GitHub Pages
 
@@ -19,18 +20,16 @@ GitHub instructions: https://docs.github.com/en/pages/getting-started-with-githu
 ## Files
 
 - `index.html`: page text, layout structure, process SVG, calculator inputs and vendor table.
-- `site.css`: desktop and mobile styles, headline animation and reduced-motion rules.
-- `site.js`: calculator, diagram controls, menu and scroll reveals.
-- `STP_Resource_Loop_Explainer_Voiceover.mp4`: narrated explainer and download.
-- `explainer-poster.jpg`: video cover image.
-- `explainer.vtt`: English captions.
+- `site.css`: desktop and mobile styles, motion graphics (loop, flowing pipes, bubbles) and reduced-motion rules. Fonts (Inter Tight, JetBrains Mono) load from Google Fonts.
+- `site.js`: calculator, diagram controls, menu, scroll reveals, count-up figures and reading-progress bar.
+- `og-image.png`: social-media preview image.
 - `.nojekyll`: static-site marker.
 
 ## Edit and preview
 
 Edit the HTML for copy, the CSS for appearance, and `site.js` for calculator assumptions or interactions. Commit updates to the publishing branch to update your site.
 
-You can open `index.html` directly to inspect the basic page. For more reliable media/caption testing, run `python3 -m http.server 8000` inside the extracted folder and visit `http://localhost:8000/`.
+You can open `index.html` directly to inspect the basic page. For a closer match to the live site, run `python3 -m http.server 8000` inside the extracted folder and visit `http://localhost:8000/`.
 
 ## Use a branded web address
 
@@ -39,6 +38,20 @@ Official instructions: https://docs.github.com/en/pages/configuring-a-custom-dom
 
 ## Calculator notes
 
-The model includes core system cost plus food-waste and compost equipment. Annual value is before O&M, auxiliary electricity consumption, downtime, financing and taxes. Carbon-credit revenue is excluded. Inputs outside 1,000–10,000 homes extrapolate the reference model. This is an early planning estimate, not a vendor quote or engineering design.
+The planner compares three setups (manual, hybrid, automated) and includes:
+
+- core system cost from the workbook, scaled by STP capacity;
+- digester and covered digestate tank volume sized from retention time (default 30 days) and daily feed, priced per m³ above the workbook's built-in 50 m³/MLD;
+- food-waste preparation (shredder line) and composting equipment;
+- an automation package for the hybrid and automated setups;
+- commissioning and start-up seeding;
+- yearly running costs: extra operator time, maintenance and spares, lab testing and consumables;
+- a gas-output basis: "Field-proven" (default, about 45% of design yield, matching Pune plant data) or "Design yield";
+- an optional comparison against the simplest legally compliant alternative;
+- value from net electricity (after the plant's own use), avoided disposal spend and fertilizer value.
+
+An "Improve the returns" block adds thicker sludge (smaller tanks), outside organic waste with a fee, and compost sales. A step-by-step table shows what each improvement adds, and a button applies the recommended package. Maintenance is charged on equipment rather than tanks, operator cost grows with tonnes handled, and food-waste equipment gets cheaper per kg above 1 tonne/day.
+
+Digester tank rate, automation packages, operator cost, maintenance rate and electricity value are planning placeholders. The advanced assumptions panel makes the main ones editable; replace them with vendor and site figures. Payback is simple and undiscounted, and excludes financing, taxes and major replacements. Carbon-credit revenue is excluded. Inputs outside 1,000–10,000 homes extrapolate the reference model. This is an early planning estimate, not a vendor quote or engineering design.
 
 The export contains only the standalone website and this guide. Existing hosting configuration, Git history, credentials and unused artwork are excluded.
