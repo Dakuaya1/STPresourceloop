@@ -39,6 +39,16 @@ Official instructions: https://docs.github.com/en/pages/configuring-a-custom-dom
 
 ## Calculator notes
 
-The model includes core system cost plus food-waste and compost equipment. An optional monthly disposal-spend input (sludge and organic-waste treatment and transport) replaces the workbook's default disposal saving. The planner also shows simple payback, a 20-year value and a sludge-only / + food waste / + garden waste comparison. Annual value is before O&M, auxiliary electricity consumption, downtime, financing and taxes. Carbon-credit revenue is excluded. Inputs outside 1,000–10,000 homes extrapolate the reference model. This is an early planning estimate, not a vendor quote or engineering design.
+The planner compares three setups (manual, hybrid, automated) and includes:
+
+- core system cost from the workbook, scaled by STP capacity;
+- digester and covered digestate tank volume sized from retention time (default 30 days) and daily feed, priced per m³ above the workbook's built-in 50 m³/MLD;
+- food-waste preparation (shredder line) and composting equipment;
+- an automation package for the hybrid and automated setups;
+- commissioning and start-up seeding;
+- yearly running costs: extra operator time, maintenance and spares, lab testing and consumables;
+- value from net electricity (after the plant's own use), avoided disposal spend and fertilizer value.
+
+Digester tank rate, automation packages, operator cost, maintenance rate and electricity value are planning placeholders. The advanced assumptions panel makes the main ones editable; replace them with vendor and site figures. Payback is simple and undiscounted, and excludes financing, taxes and major replacements. Carbon-credit revenue is excluded. Inputs outside 1,000–10,000 homes extrapolate the reference model. This is an early planning estimate, not a vendor quote or engineering design.
 
 The export contains only the standalone website and this guide. Existing hosting configuration, Git history, credentials and unused artwork are excluded.
