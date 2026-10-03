@@ -39,6 +39,6 @@ Official instructions: https://docs.github.com/en/pages/configuring-a-custom-dom
 
 ## Calculator notes
 
-The model includes core system cost plus food-waste and compost equipment. Annual value is before O&M, auxiliary electricity consumption, downtime, financing and taxes. Carbon-credit revenue is excluded. Inputs outside 1,000–10,000 homes extrapolate the reference model. This is an early planning estimate, not a vendor quote or engineering design.
+The model includes core system cost plus food-waste and compost equipment. An optional monthly disposal-spend input (sludge and organic-waste treatment and transport) replaces the workbook's default disposal saving. The planner also shows simple payback, a 20-year value and a sludge-only / + food waste / + garden waste comparison. Annual value is before O&M, auxiliary electricity consumption, downtime, financing and taxes. Carbon-credit revenue is excluded. Inputs outside 1,000–10,000 homes extrapolate the reference model. This is an early planning estimate, not a vendor quote or engineering design.
 
 The export contains only the standalone website and this guide. Existing hosting configuration, Git history, credentials and unused artwork are excluded.

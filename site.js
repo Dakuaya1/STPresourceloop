@@ -10,35 +10,45 @@
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') { closeMenu(); menu.focus(); } });
   // Project workbook model. Currency values in lakh unless explicitly converted.
   const fmt = (value, decimals = 0) => new Intl.NumberFormat('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value);
-  function calculate(homes, persons) {
+  // feed: 'sludge' | 'food' (sludge + food waste) | 'all' (plus garden/leaf composting). spend: ₹/month avoided, or null for the workbook default.
+  function calculate(homes, persons, spend = null, feed = 'all') {
     const population = homes * persons;
     const mld = population * 100 / 1e6;
-    const food = population * .15;
+    const food = feed === 'sludge' ? 0 : population * .15;
     const gas = population * 9 * .55 / 1000 + food * .12;
     const kwh = gas * 6 * .32;
     const scale = Math.max(.55, Math.pow(mld / 1.5, -.25));
     const core = mld * 55 * scale;
-    const addon = (food * 3000 + homes / 100 * 5 * 2000) / 100000;
-    return {mld, food, gas, kwh, core, addon, central:core + addon, low:mld * 40 * scale + addon * .7, high:mld * 70 * scale + addon * 1.3, annual:kwh * 365 * 8 / 100000 + mld * (.67 + .43)};
+    const addon = (food * 3000 + (feed === 'all' ? homes / 100 * 5 * 2000 : 0)) / 100000;
+    const power = kwh * 365 * 8 / 100000, disposal = spend === null ? mld * .67 : spend * 12 / 100000, fertilizer = mld * .43;
+    const central = core + addon, annual = power + disposal + fertilizer;
+    return {mld, food, gas, kwh, core, addon, central, low:mld * 40 * scale + addon * .7, high:mld * 70 * scale + addon * 1.3, power, disposal, fertilizer, annual, payback:central / annual};
   }
+  const lakh = value => value >= 100 ? '₹'+fmt(value/100,2)+' crore' : '₹'+fmt(value,2)+' lakh';
+  const years = value => Number.isFinite(value) ? fmt(value,1)+' years' : '—';
   function updateEstimate() {
-    const homes = Number($('families').value), persons = Number($('people').value), quote = Number($('quote').value);
+    const homes = Number($('families').value), persons = Number($('people').value), quote = Number($('quote').value), spendText = $('spend').value.trim(), spend = spendText === '' ? null : Number(spendText);
     let error = '';
     if (!Number.isInteger(homes) || homes < 1 || homes > 100000) error = 'Enter a whole number of homes between 1 and 1,00,000.';
     else if (!Number.isFinite(persons) || persons < 1 || persons > 20) error = 'Enter a household size between 1 and 20 people.';
+    else if (spend !== null && (!Number.isFinite(spend) || spend < 0)) error = 'Enter a valid non-negative monthly disposal spend in ₹.';
     else if (!Number.isFinite(quote) || quote < 0) error = 'Enter a valid non-negative quote in ₹ lakh.';
     $('input-error').textContent = error;
     if (error) return;
-    const v = calculate(homes, persons);
+    const v = calculate(homes, persons, spend);
     $('scale-note').hidden = homes >= 1000 && homes <= 10000;
-    const values = {central:'₹'+fmt(v.central,1), low:'₹'+fmt(v.low,1)+' L', high:'₹'+fmt(v.high,1)+' L', 'core-cost':'₹'+fmt(v.core,1)+' lakh', 'addon-cost':'₹'+fmt(v.addon,1)+' lakh', perhome:'₹'+fmt(v.central*100000/homes), annual:'₹'+fmt(v.annual,2)+' L/year', cap:fmt(v.mld,3)+' MLD', gas:fmt(v.gas,1)+' m³/day', power:fmt(v.kwh)+' kWh/day', food:fmt(v.food)+' kg/day'};
+    const values = {central:'₹'+fmt(v.central,1), low:'₹'+fmt(v.low,1)+' L', high:'₹'+fmt(v.high,1)+' L', 'core-cost':'₹'+fmt(v.core,1)+' lakh', 'addon-cost':'₹'+fmt(v.addon,1)+' lakh', perhome:'₹'+fmt(v.central*100000/homes), annual:'₹'+fmt(v.annual,2)+' L/year', payback:years(v.payback), lifetime:lakh(v.annual*20), 'annual-split':'Electricity '+lakh(v.power)+' · Avoided disposal '+lakh(v.disposal)+(spend === null ? ' (workbook estimate)' : '')+' · Fertilizer '+lakh(v.fertilizer)+' per year', cap:fmt(v.mld,3)+' MLD', gas:fmt(v.gas,1)+' m³/day', power:fmt(v.kwh)+' kWh/day', food:fmt(v.food)+' kg/day'};
     Object.entries(values).forEach(([id, value]) => $(id).textContent = value);
+    $('scenario-rows').innerHTML = [['sludge','STP sludge only'],['food','+ Food waste'],['all','+ Garden waste &amp; leaves (composted)']].map(([feed, label]) => {
+      const s = calculate(homes, persons, spend, feed);
+      return `<tr${feed === 'all' ? ' class="is-current"' : ''}><th scope="row">${label}</th><td>${fmt(s.gas,1)} m³/day</td><td>${fmt(s.kwh)} kWh/day</td><td>₹${fmt(s.central,1)} L</td><td>₹${fmt(s.annual,2)} L</td><td>${years(s.payback)}</td></tr>`;
+    }).join('');
     $('core-bar').style.flex = String(v.core / v.central);
     $('addon-bar').style.flex = String(v.addon / v.central);
     $('quoteResult').hidden = !(quote > 0);
     if (quote > 0) $('quotePer').textContent = '₹'+fmt(quote*100000/homes)+' per home · ₹'+fmt(quote,1)+' lakh total';
   }
-  ['families','people','quote'].forEach(id => $(id).addEventListener('input', updateEstimate));
+  ['families','people','spend','quote'].forEach(id => $(id).addEventListener('input', updateEstimate));
   updateEstimate();
   const diagram = $('loop-diagram');
   const paths = [...diagram.querySelectorAll('.flow-paths path')];
@@ -52,18 +62,18 @@
   function trace(stage) {
     pathAnimations.forEach(a => a.cancel()); pathAnimations = [];
     if (reduced.matches || !Element.prototype.animate) return;
-    paths.filter(p => !stage || p.dataset.route === stage).forEach((p, index) => {
+    paths.filter(p => !stage || p.dataset.route.split(' ').includes(stage)).forEach((p, index) => {
       pathAnimations.push(p.animate([{strokeDashoffset:1,opacity:.2},{strokeDashoffset:0,opacity:1}],{duration:1100,delay:index*150,easing:ease}));
     });
   }
-  buttons.forEach(button => button.addEventListener('click', event => {
+  buttons.forEach(button => button.addEventListener('click', () => {
     const stage = button.dataset.flow;
     buttons.forEach(b => b.setAttribute('aria-pressed', String(b === button)));
     diagram.classList.add('has-focus');
     if (diagram.scrollWidth > diagram.clientWidth) diagram.scrollTo({left:({collect:0,digest:.5,recover:1}[stage])*(diagram.scrollWidth-diagram.clientWidth),behavior:reduced.matches?'auto':'smooth'});
     diagram.querySelectorAll('[data-scene]').forEach(g => g.classList.toggle('is-active',g.dataset.scene === stage));
     $('flow-copy').textContent = descriptions[stage];
-    if (event.detail > 0) trace(stage);
+    trace(stage);
   }));
   $('replay').addEventListener('click', () => {
     diagram.classList.remove('has-focus'); buttons.forEach(b => b.setAttribute('aria-pressed','false'));
