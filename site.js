@@ -26,7 +26,8 @@
     const mld = population * 100 / 1e6;
     const food = population * .15, green = homes / 100 * 5, outside = o.outside || 0, organics = food + outside;
     const maint = o.maint ?? setup.maint, operator = o.operator ?? operatorDefault(o.setup, organics);
-    const gas = population * 9 * .55 / 1000 + organics * .12;
+    // Field-proven output from Indian plants is ~45% of design yield (≈0.09 kWh net per kg of food waste).
+    const gas = (population * 9 * .55 / 1000 + organics * .12) * (o.perf === 'design' ? 1 : .45);
     const kwh = gas * 6 * .32 * (1 - setup.parasitic);
     // Digester sized from retention time: thickened sludge (0.035 kg DS/person/day at 5%, or 8% with better thickening) plus food slurry (~1 L/kg).
     const sludgeDS = population * .035;
@@ -56,21 +57,25 @@
   }
   const lakh = value => (value < 0 ? '−' : '') + (Math.abs(value) >= 100 ? '₹'+fmt(Math.abs(value)/100,2)+' crore' : '₹'+fmt(Math.abs(value),2)+' lakh');
   const years = value => !Number.isFinite(value) ? 'No payback' : value > 30 ? 'Over 30 years' : fmt(value,1)+' years';
-  const perFamily = (value, homes) => '₹'+fmt(value * 100000 / homes / 12);
+  const perFamily = (value, homes) => (value < 0 ? '−' : '')+'₹'+fmt(Math.abs(value) * 100000 / homes / 12);
   const num = id => { const t = $(id).value.trim(); return t === '' ? NaN : Number(t); };
   const selectedSetup = () => document.querySelector('input[name="setup"]:checked').value;
+  const selectedPerf = () => document.querySelector('input[name="perf"]:checked').value;
+  const optional = id => { const t = $(id).value.trim(); return t === '' ? null : Number(t); };
   let operatorEdited = false;
   function updateEstimate() {
     const homes = Number($('families').value), persons = Number($('people').value), quote = Number($('quote').value), spendText = $('spend').value.trim(), spend = spendText === '' ? null : Number(spendText);
     const setupKey = selectedSetup(), outside = num('outside');
     if (!operatorEdited && homes > 0 && persons > 0 && outside >= 0) $('operator').value = operatorDefault(setupKey, homes * persons * .15 + outside);
-    const o = {setup:setupKey, spend, hrt:num('hrt'), rate:num('rate'), operator:num('operator'), maint:num('maint'), tariff:num('tariff'), thick:$('thick').checked, outside, fee:num('fee'), compostPrice:num('compost-price')};
+    const o = {setup:setupKey, spend, hrt:num('hrt'), rate:num('rate'), operator:num('operator'), maint:num('maint'), tariff:num('tariff'), thick:$('thick').checked, outside, fee:num('fee'), compostPrice:num('compost-price'), perf:selectedPerf()};
+    const altCapex = optional('alt-capex'), altOpex = optional('alt-opex');
     let error = '';
     if (!Number.isInteger(homes) || homes < 1 || homes > 100000) error = 'Enter a whole number of homes between 1 and 1,00,000.';
     else if (!Number.isFinite(persons) || persons < 1 || persons > 20) error = 'Enter a household size between 1 and 20 people.';
     else if (spend !== null && (!Number.isFinite(spend) || spend < 0)) error = 'Enter a valid non-negative monthly disposal spend in ₹.';
     else if (!Number.isFinite(quote) || quote < 0) error = 'Enter a valid non-negative quote in ₹ lakh.';
     else if (!(o.outside >= 0) || !(o.fee >= 0) || !(o.compostPrice >= 0)) error = 'Check the improvement inputs: values must be zero or more.';
+    else if ((altCapex !== null && !(altCapex >= 0)) || (altOpex !== null && !(altOpex >= 0))) error = 'Enter non-negative figures for the compliant alternative.';
     else if (!(o.hrt >= 10 && o.hrt <= 60)) error = 'Enter a retention time between 10 and 60 days.';
     else if (!(o.rate >= 0) || !(o.operator >= 0) || !(o.maint >= 0 && o.maint <= 20) || !(o.tariff >= 0)) error = 'Check the advanced assumptions: values must be non-negative, and maintenance at most 20%.';
     $('input-error').textContent = error;
@@ -109,6 +114,15 @@
       return `<tr${i === steps.length - 1 ? ' class="is-current"' : ''}><th scope="row">${label}</th><td>${lakh(s.central)}</td><td>${lakh(s.annual)}</td><td>${lakh(s.om)}</td><td>${lakh(s.net)}</td><td>${years(s.payback)}</td></tr>`;
     }).join('');
     [['core-bar','core'],['tank-bar','tanks'],['addon-bar','addon'],['auto-bar','automation'],['comm-bar','commissioning']].forEach(([id, key]) => $(id).style.flex = String(v[key] / v.central));
+    // Against the legal minimum: the society must spend on a compliant option anyway, so only the extra investment needs paying back.
+    $('compliance-line').hidden = altCapex === null;
+    if (altCapex !== null) {
+      const extra = v.central - altCapex, yearly = v.net + (altOpex || 0);
+      $('compliance-line').textContent = extra <= 0 ? 'This system costs no more than the compliant alternative, and earns '+lakh(yearly)+' a year more.'
+        : yearly > 0 && extra / yearly <= 30 ? 'Compared with the legal minimum, this system costs '+lakh(extra)+' more and earns '+lakh(yearly)+' a year more, so the extra investment pays back in '+years(extra / yearly)+'.'
+        : yearly > 0 ? 'Compared with the legal minimum, this system costs '+lakh(extra)+' more and earns '+lakh(yearly)+' a year more, which takes over 30 years to recover.'
+        : 'Compared with the legal minimum, this system costs '+lakh(extra)+' more and does not earn that back at these inputs.';
+    }
     $('quoteResult').hidden = !(quote > 0);
     if (quote > 0) $('quotePer').textContent = '₹'+fmt(quote*100000/homes)+' per home · ₹'+fmt(quote,1)+' lakh total';
   }
@@ -126,6 +140,8 @@
   });
   ['families','people','spend','quote','hrt','rate','operator','maint','tariff','outside','fee','compost-price'].forEach(id => $(id).addEventListener('input', updateEstimate));
   $('thick').addEventListener('change', updateEstimate);
+  document.querySelectorAll('input[name="perf"]').forEach(radio => radio.addEventListener('change', updateEstimate));
+  ['alt-capex','alt-opex'].forEach(id => $(id).addEventListener('input', updateEstimate));
   updateEstimate();
   const diagram = $('loop-diagram');
   const paths = [...diagram.querySelectorAll('.flow-paths path')];

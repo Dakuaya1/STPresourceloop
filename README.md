@@ -1,6 +1,7 @@
 # STP Resource Loop
 
 Complete static website export, 30 September 2026.
+Updated: legal-requirement framing (Solid Waste Management Rules 2016), a "Proven elsewhere" section with sourced examples from India and abroad, and a cost planner calibrated to field data from Indian plants.
 Includes the redesigned project brief, animated headline, interactive system diagram, cost calculator, narrated video and English captions.
 
 ## Publish on GitHub Pages
@@ -47,6 +48,8 @@ The planner compares three setups (manual, hybrid, automated) and includes:
 - an automation package for the hybrid and automated setups;
 - commissioning and start-up seeding;
 - yearly running costs: extra operator time, maintenance and spares, lab testing and consumables;
+- a gas-output basis: "Field-proven" (default, about 45% of design yield, matching Pune plant data) or "Design yield";
+- an optional comparison against the simplest legally compliant alternative;
 - value from net electricity (after the plant's own use), avoided disposal spend and fertilizer value.
 
 An "Improve the returns" block adds thicker sludge (smaller tanks), outside organic waste with a fee, and compost sales. A step-by-step table shows what each improvement adds, and a button applies the recommended package. Maintenance is charged on equipment rather than tanks, operator cost grows with tonnes handled, and food-waste equipment gets cheaper per kg above 1 tonne/day.
