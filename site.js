@@ -62,7 +62,21 @@
   const selectedSetup = () => document.querySelector('input[name="setup"]:checked').value;
   const selectedPerf = () => document.querySelector('input[name="perf"]:checked').value;
   const optional = id => { const t = $(id).value.trim(); return t === '' ? null : Number(t); };
-  let operatorEdited = false;
+  let operatorEdited = false, shownCentral = null, tweenFrame = 0;
+  // Animate the big cost figure between values (in ₹ lakh); falls back to the final text.
+  function tweenCentral(target, finalText) {
+    const el = $('central');
+    cancelAnimationFrame(tweenFrame);
+    if (shownCentral === null || reduced.matches) { el.textContent = finalText; shownCentral = target; return; }
+    const from = shownCentral, start = performance.now(), crore = target >= 100;
+    const step = now => {
+      const t = Math.min(1, (now - start) / 450), value = from + (target - from) * (1 - Math.pow(1 - t, 3));
+      el.textContent = t < 1 ? '₹'+(crore ? fmt(value/100,2) : fmt(value,1)) : finalText;
+      if (t < 1) tweenFrame = requestAnimationFrame(step);
+    };
+    shownCentral = target;
+    tweenFrame = requestAnimationFrame(step);
+  }
   function updateEstimate() {
     const homes = Number($('families').value), persons = Number($('people').value), quote = Number($('quote').value), spendText = $('spend').value.trim(), spend = spendText === '' ? null : Number(spendText);
     const setupKey = selectedSetup(), outside = num('outside');
@@ -95,7 +109,9 @@
       breakeven:v.breakeven > 0 ? 'For a 10-year payback, the society’s current disposal spend would need to be about ₹'+fmt(Math.ceil(v.breakeven/1000)*1000)+' per month.' : 'At this disposal spend, the project pays back within 10 years.',
       cap:fmt(v.mld,3)+' MLD', feed:fmt(v.feedM3,1)+' m³/day', volume:fmt(v.digesterM3)+' m³ + '+fmt(v.postM3)+' m³', gas:fmt(v.gas,1)+' m³/day', power:fmt(v.kwh)+' kWh/day', food:fmt(v.organics)+' kg/day', green:fmt(v.green)+' kg/day', 'compost-out':fmt(v.compost)+' kg/day'
     };
+    const centralText = values.central; delete values.central;
     Object.entries(values).forEach(([id, value]) => $(id).textContent = value);
+    tweenCentral(v.central, centralText);
     $('setup-rows').innerHTML = Object.entries(SETUPS).map(([key, setup]) => {
       const s = calculate(homes, persons, {...o, setup:key, operator:undefined, maint:undefined});
       const figure = $('model-'+key); if (figure) figure.textContent = 'About '+lakh(s.central)+' for '+fmt(homes)+' homes · running cost '+lakh(s.om)+' a year';
@@ -173,15 +189,46 @@
     $('flow-copy').textContent = 'Follow the complete loop: collect suitable sludge and food waste, digest the prepared feed, and recover energy and treated material. Sewage treatment continues throughout.';
     trace();
   });
+  // Count a number up from zero once it scrolls into view.
+  function countUp(el) {
+    const target = Number(el.dataset.count);
+    if (reduced.matches || !target) { el.textContent = fmt(target); return; }
+    const start = performance.now(), duration = 1400;
+    const step = now => {
+      const t = Math.min(1, (now - start) / duration), eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = fmt(Math.round(target * eased));
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
   if ('IntersectionObserver' in window) {
     const reveal = new IntersectionObserver(entries => entries.forEach(entry => {
       if (!entry.isIntersecting) return;
       reveal.unobserve(entry.target);
-      if (!reduced.matches && entry.target.animate) entry.target.animate([{opacity:0,transform:'translateY(16px)'},{opacity:1,transform:'translateY(0)'}],{duration:550,easing:ease});
-    }),{threshold:.15});
-    document.querySelectorAll('.section-head h2,.value-strip article,.technology-list article,.delivery-list li,.operations,.impact-grid article,.film-section>div:first-child').forEach(el => reveal.observe(el));
+      if (reduced.matches || !entry.target.animate) return;
+      // Stagger siblings in the same row or grid.
+      const index = [...entry.target.parentElement.children].indexOf(entry.target) % 4;
+      entry.target.animate([{opacity:0,transform:'translateY(22px)'},{opacity:1,transform:'translateY(0)'}],{duration:700,delay:index * 90,easing:ease,fill:'backwards'});
+    }),{threshold:.12});
+    document.querySelectorAll('.section-head h2,.section-head>div>p,.value-strip article,.technology-list article,.delivery-list li,.operations,.impact-grid article,.mandate,.proof-grid article,.field-lesson,.run-flow li,.models article,.stats>div,.comparison article,.faq-list details,.assessment-list>div,.levers>div').forEach(el => reveal.observe(el));
+    const counters = new IntersectionObserver(entries => entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      counters.unobserve(entry.target);
+      countUp(entry.target);
+    }),{threshold:.6});
+    document.querySelectorAll('[data-count]').forEach(el => counters.observe(el));
     const flowObserver = new IntersectionObserver(entries => { if(entries.some(e => e.isIntersecting)){trace();flowObserver.disconnect();} },{threshold:.35});
     flowObserver.observe(diagram);
   }
-  reduced.addEventListener('change', event => { if(event.matches) document.getAnimations?.().forEach(animation => animation.cancel()); });
+  // Reading-progress bar.
+  const bar = $('progress-bar');
+  let ticking = false;
+  const setProgress = () => { const max = document.documentElement.scrollHeight - innerHeight; bar.style.transform = 'scaleX('+(max > 0 ? scrollY / max : 0)+')'; ticking = false; };
+  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(setProgress); } }, {passive:true});
+  setProgress();
+  // The hero loop uses SVG animation, which CSS cannot stop; pause it for reduced motion.
+  const loop = $('hero-loop');
+  const syncLoop = () => { if (!loop?.pauseAnimations) return; reduced.matches ? loop.pauseAnimations() : loop.unpauseAnimations(); };
+  syncLoop();
+  reduced.addEventListener('change', event => { syncLoop(); if(event.matches) document.getAnimations?.().forEach(animation => animation.cancel()); });
 })();

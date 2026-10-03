@@ -2,7 +2,7 @@
 
 Complete static website export, 30 September 2026.
 Updated: legal-requirement framing (Solid Waste Management Rules 2016), a "Proven elsewhere" section with sourced examples from India and abroad, and a cost planner calibrated to field data from Indian plants.
-Includes the redesigned project brief, animated headline, interactive system diagram, cost calculator, narrated video and English captions.
+Includes the project brief, animated resource-loop graphic, interactive system diagram and cost planner.
 
 ## Publish on GitHub Pages
 
@@ -20,18 +20,16 @@ GitHub instructions: https://docs.github.com/en/pages/getting-started-with-githu
 ## Files
 
 - `index.html`: page text, layout structure, process SVG, calculator inputs and vendor table.
-- `site.css`: desktop and mobile styles, headline animation and reduced-motion rules.
-- `site.js`: calculator, diagram controls, menu and scroll reveals.
-- `STP_Resource_Loop_Explainer_Voiceover.mp4`: narrated explainer and download.
-- `explainer-poster.jpg`: video cover image.
-- `explainer.vtt`: English captions.
+- `site.css`: desktop and mobile styles, motion graphics (loop, flowing pipes, bubbles) and reduced-motion rules. Fonts (Inter Tight, JetBrains Mono) load from Google Fonts.
+- `site.js`: calculator, diagram controls, menu, scroll reveals, count-up figures and reading-progress bar.
+- `og-image.png`: social-media preview image.
 - `.nojekyll`: static-site marker.
 
 ## Edit and preview
 
 Edit the HTML for copy, the CSS for appearance, and `site.js` for calculator assumptions or interactions. Commit updates to the publishing branch to update your site.
 
-You can open `index.html` directly to inspect the basic page. For more reliable media/caption testing, run `python3 -m http.server 8000` inside the extracted folder and visit `http://localhost:8000/`.
+You can open `index.html` directly to inspect the basic page. For a closer match to the live site, run `python3 -m http.server 8000` inside the extracted folder and visit `http://localhost:8000/`.
 
 ## Use a branded web address
 
