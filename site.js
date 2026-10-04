@@ -16,10 +16,8 @@
     hybrid:{name:'Hybrid', autoFixed:6, autoPct:.08, operator:6000, maint:2.5, parasitic:.12},
     automated:{name:'Automated', autoFixed:15, autoPct:.20, operator:3000, maint:3.5, parasitic:.15}
   };
-  // Recommended improvement package: thicker sludge, outside organic waste at 50% of residents' food waste with a ₹2/kg fee, compost sold at ₹2/kg.
-  const PACKAGE = {thick:true, outsideShare:.5, fee:2, compostPrice:2};
   const operatorDefault = (setup, organics) => Math.round(SETUPS[setup].operator * Math.pow(Math.max(1, organics / 1000), .8) / 500) * 500;
-  // All money in ₹ lakh. Feed: STP sludge + residents' food waste + outside organic waste (digested), green waste (composted).
+  // All money in ₹ lakh. Feed: STP sludge + residents' food waste + outside organic waste (digested), green waste (composted). Returns cost, running cost and daily outputs.
   function calculate(homes, persons, o) {
     const setup = SETUPS[o.setup];
     const population = homes * persons;
@@ -46,22 +44,15 @@
     const high = mld * 70 * scale + tanks * 1.4 + addon * 1.3 + automation * 1.25 + commissioning;
     // Compost: solids left after digestion (~55%) at 35% moisture, plus green-waste compost at 35% yield.
     const compost = (sludgeDS + organics * .25) * .55 / .65 + green * .35;
-    const compostPrice = o.compostPrice || 0, fee = o.fee || 0;
-    const power = kwh * 365 * o.tariff / 100000, disposal = o.spend === null ? mld * .67 : o.spend * 12 / 100000;
-    const fertilizer = compostPrice > 0 ? 0 : mld * .43, compostSales = compost * compostPrice * 365 / 100000, tipping = outside * fee * 365 / 100000;
     const staff = operator * 12 / 100000, upkeep = maint / 100 * (core + addon + automation) + .005 * tanks, lab = .5 + gas * 365 / 100000;
-    const annual = power + disposal + fertilizer + compostSales + tipping, om = staff + upkeep + lab, net = annual - om;
-    // Monthly disposal spend at which the project pays back in 10 years.
-    const breakeven = Math.max(0, central / 10 + om - (annual - disposal)) * 100000 / 12;
-    return {mld, food, green, outside, organics, gas, kwh, feedM3, digesterM3, postM3, compost, core, tanks, addon, automation, commissioning, central, low, high, power, disposal, fertilizer, compostSales, tipping, operator, staff, upkeep, lab, annual, om, net, payback:net > 0 ? central / net : Infinity, breakeven};
+    const om = staff + upkeep + lab;
+    return {mld, food, green, outside, organics, gas, kwh, feedM3, digesterM3, postM3, compost, core, tanks, addon, automation, commissioning, central, low, high, operator, staff, upkeep, lab, om};
   }
   const lakh = value => (value < 0 ? '−' : '') + (Math.abs(value) >= 100 ? '₹'+fmt(Math.abs(value)/100,2)+' crore' : '₹'+fmt(Math.abs(value),2)+' lakh');
-  const years = value => !Number.isFinite(value) ? 'No payback' : value > 30 ? 'Over 30 years' : fmt(value,1)+' years';
   const perFamily = (value, homes) => (value < 0 ? '−' : '')+'₹'+fmt(Math.abs(value) * 100000 / homes / 12);
   const num = id => { const t = $(id).value.trim(); return t === '' ? NaN : Number(t); };
   const selectedSetup = () => document.querySelector('input[name="setup"]:checked').value;
   const selectedPerf = () => document.querySelector('input[name="perf"]:checked').value;
-  const optional = id => { const t = $(id).value.trim(); return t === '' ? null : Number(t); };
   let operatorEdited = false, shownCentral = null, tweenFrame = 0;
   // Animate the big cost figure between values (in ₹ lakh); falls back to the final text.
   function tweenCentral(target, finalText) {
@@ -78,67 +69,39 @@
     tweenFrame = requestAnimationFrame(step);
   }
   function updateEstimate() {
-    const homes = Number($('families').value), persons = Number($('people').value), quote = Number($('quote').value), spendText = $('spend').value.trim(), spend = spendText === '' ? null : Number(spendText);
+    const homes = Number($('families').value), persons = Number($('people').value), quote = Number($('quote').value);
     const setupKey = selectedSetup(), outside = num('outside');
     if (!operatorEdited && homes > 0 && persons > 0 && outside >= 0) $('operator').value = operatorDefault(setupKey, homes * persons * .15 + outside);
-    const o = {setup:setupKey, spend, hrt:num('hrt'), rate:num('rate'), operator:num('operator'), maint:num('maint'), tariff:num('tariff'), thick:$('thick').checked, outside, fee:num('fee'), compostPrice:num('compost-price'), perf:selectedPerf()};
-    const altCapex = optional('alt-capex'), altOpex = optional('alt-opex');
+    const o = {setup:setupKey, hrt:num('hrt'), rate:num('rate'), operator:num('operator'), maint:num('maint'), thick:$('thick').checked, outside, perf:selectedPerf()};
     let error = '';
     if (!Number.isInteger(homes) || homes < 1 || homes > 100000) error = 'Enter a whole number of homes between 1 and 1,00,000.';
     else if (!Number.isFinite(persons) || persons < 1 || persons > 20) error = 'Enter a household size between 1 and 20 people.';
-    else if (spend !== null && (!Number.isFinite(spend) || spend < 0)) error = 'Enter a valid non-negative monthly disposal spend in ₹.';
     else if (!Number.isFinite(quote) || quote < 0) error = 'Enter a valid non-negative quote in ₹ lakh.';
-    else if (!(o.outside >= 0) || !(o.fee >= 0) || !(o.compostPrice >= 0)) error = 'Check the improvement inputs: values must be zero or more.';
-    else if ((altCapex !== null && !(altCapex >= 0)) || (altOpex !== null && !(altOpex >= 0))) error = 'Enter non-negative figures for the compliant alternative.';
+    else if (!(o.outside >= 0)) error = 'Enter zero or more kg of outside organic waste.';
     else if (!(o.hrt >= 10 && o.hrt <= 60)) error = 'Enter a retention time between 10 and 60 days.';
-    else if (!(o.rate >= 0) || !(o.operator >= 0) || !(o.maint >= 0 && o.maint <= 20) || !(o.tariff >= 0)) error = 'Check the advanced assumptions: values must be non-negative, and maintenance at most 20%.';
+    else if (!(o.rate >= 0) || !(o.operator >= 0) || !(o.maint >= 0 && o.maint <= 20)) error = 'Check the advanced assumptions: values must be non-negative, and maintenance at most 20%.';
     $('input-error').textContent = error;
     if (error) return;
     const v = calculate(homes, persons, o);
     $('scale-note').hidden = homes >= 1000 && homes <= 10000;
-    const extras = [v.tipping > 0 && 'outside-waste fees '+lakh(v.tipping), v.compostSales > 0 ? 'compost sales '+lakh(v.compostSales) : 'fertilizer '+lakh(v.fertilizer)].filter(Boolean).join(' · ');
     const values = {
       'setup-name':SETUPS[setupKey].name.toUpperCase()+' SETUP',
       'feed-basis':'Includes '+fmt(homes)+' families × '+fmt(persons,1)+' people: STP sludge, '+fmt(v.food)+' kg of food waste'+(v.outside > 0 ? ', '+fmt(v.outside)+' kg of outside organic waste' : '')+' and '+fmt(v.green)+' kg of green waste a day.',
-      central:'₹'+(v.central >= 100 ? fmt(v.central/100,2) : fmt(v.central,1)), 'central-unit':v.central >= 100 ? 'crore' : 'lakh', low:'₹'+fmt(v.low,1)+' L', high:'₹'+fmt(v.high,1)+' L',
+      'central-unit':v.central >= 100 ? 'crore' : 'lakh', low:lakh(v.low), high:lakh(v.high),
       'core-cost':lakh(v.core), 'tank-cost':lakh(v.tanks), 'addon-cost':lakh(v.addon), 'auto-cost':lakh(v.automation), 'comm-cost':lakh(v.commissioning),
-      perhome:'₹'+fmt(v.central*100000/homes), annual:lakh(v.annual), om:lakh(v.om), net:lakh(v.net), payback:years(v.payback), lifetime:lakh(v.net*20),
-      'annual-split':'Value per year: electricity '+lakh(v.power)+' · avoided disposal '+lakh(v.disposal)+(spend === null ? ' (workbook estimate)' : '')+' · '+extras,
+      perhome:'₹'+fmt(v.central*100000/homes), om:lakh(v.om), 'om-family':perFamily(v.om, homes),
+      'out-gas':fmt(v.gas)+' m³', 'out-power':fmt(v.kwh)+' kWh', 'out-compost':fmt(v.compost)+' kg',
       'om-split':'Running cost per year: operator '+lakh(v.staff)+' · maintenance & spares '+lakh(v.upkeep)+' · lab tests & consumables '+lakh(v.lab),
-      'per-family':'Per family per month: value '+perFamily(v.annual, homes)+' · running cost '+perFamily(v.om, homes)+' · left over '+perFamily(v.net, homes),
-      breakeven:v.breakeven > 0 ? 'For a 10-year payback, the society’s current disposal spend would need to be about ₹'+fmt(Math.ceil(v.breakeven/1000)*1000)+' per month.' : 'At this disposal spend, the project pays back within 10 years.',
       cap:fmt(v.mld,3)+' MLD', feed:fmt(v.feedM3,1)+' m³/day', volume:fmt(v.digesterM3)+' m³ + '+fmt(v.postM3)+' m³', gas:fmt(v.gas,1)+' m³/day', power:fmt(v.kwh)+' kWh/day', food:fmt(v.organics)+' kg/day', green:fmt(v.green)+' kg/day', 'compost-out':fmt(v.compost)+' kg/day'
     };
-    const centralText = values.central; delete values.central;
     Object.entries(values).forEach(([id, value]) => $(id).textContent = value);
-    tweenCentral(v.central, centralText);
+    tweenCentral(v.central, '₹'+(v.central >= 100 ? fmt(v.central/100,2) : fmt(v.central,1)));
     $('setup-rows').innerHTML = Object.entries(SETUPS).map(([key, setup]) => {
       const s = calculate(homes, persons, {...o, setup:key, operator:undefined, maint:undefined});
       const figure = $('model-'+key); if (figure) figure.textContent = 'About '+lakh(s.central)+' for '+fmt(homes)+' homes · running cost '+lakh(s.om)+' a year';
-      return `<tr${key === setupKey ? ' class="is-current"' : ''}><th scope="row">${setup.name}</th><td>${lakh(s.central)}</td><td>₹${fmt(s.central*100000/homes)}</td><td>${lakh(s.annual)}</td><td>${lakh(s.om)}</td><td>${lakh(s.net)}</td><td>${years(s.payback)}</td></tr>`;
-    }).join('');
-    // Improvement steps: cumulative, from the plain design to the full recommended package, for the selected setup.
-    const base = {...o, operator:undefined, maint:undefined, thick:false, outside:0, fee:0, compostPrice:0};
-    const steps = [
-      ['Starting design', base],
-      ['+ Thicken sludge to 8% solids', {...base, thick:true}],
-      ['+ Take in outside organic waste ('+fmt(v.food * PACKAGE.outsideShare)+' kg/day at ₹'+PACKAGE.fee+'/kg)', {...base, thick:true, outside:v.food * PACKAGE.outsideShare, fee:PACKAGE.fee}],
-      ['+ Sell compost at ₹'+PACKAGE.compostPrice+'/kg', {...base, thick:true, outside:v.food * PACKAGE.outsideShare, fee:PACKAGE.fee, compostPrice:PACKAGE.compostPrice}]
-    ];
-    $('improve-rows').innerHTML = steps.map(([label, opts], i) => {
-      const s = calculate(homes, persons, opts);
-      return `<tr${i === steps.length - 1 ? ' class="is-current"' : ''}><th scope="row">${label}</th><td>${lakh(s.central)}</td><td>${lakh(s.annual)}</td><td>${lakh(s.om)}</td><td>${lakh(s.net)}</td><td>${years(s.payback)}</td></tr>`;
+      return `<tr${key === setupKey ? ' class="is-current"' : ''}><th scope="row">${setup.name}</th><td>${lakh(s.central)}</td><td>₹${fmt(s.central*100000/homes)}</td><td>${lakh(s.om)}</td><td>${perFamily(s.om, homes)}</td></tr>`;
     }).join('');
     [['core-bar','core'],['tank-bar','tanks'],['addon-bar','addon'],['auto-bar','automation'],['comm-bar','commissioning']].forEach(([id, key]) => $(id).style.flex = String(v[key] / v.central));
-    // Against the legal minimum: the society must spend on a compliant option anyway, so only the extra investment needs paying back.
-    $('compliance-line').hidden = altCapex === null;
-    if (altCapex !== null) {
-      const extra = v.central - altCapex, yearly = v.net + (altOpex || 0);
-      $('compliance-line').textContent = extra <= 0 ? 'This system costs no more than the compliant alternative, and earns '+lakh(yearly)+' a year more.'
-        : yearly > 0 && extra / yearly <= 30 ? 'Compared with the legal minimum, this system costs '+lakh(extra)+' more and earns '+lakh(yearly)+' a year more, so the extra investment pays back in '+years(extra / yearly)+'.'
-        : yearly > 0 ? 'Compared with the legal minimum, this system costs '+lakh(extra)+' more and earns '+lakh(yearly)+' a year more, which takes over 30 years to recover.'
-        : 'Compared with the legal minimum, this system costs '+lakh(extra)+' more and does not earn that back at these inputs.';
-    }
     $('quoteResult').hidden = !(quote > 0);
     if (quote > 0) $('quotePer').textContent = '₹'+fmt(quote*100000/homes)+' per home · ₹'+fmt(quote,1)+' lakh total';
   }
@@ -147,18 +110,9 @@
     updateEstimate();
   }));
   $('operator').addEventListener('input', () => { operatorEdited = true; });
-  $('apply-package').addEventListener('click', () => {
-    document.querySelector('.more-inputs').open = true;
-    $('thick').checked = PACKAGE.thick;
-    $('outside').value = Math.round(Number($('families').value) * Number($('people').value) * .15 * PACKAGE.outsideShare);
-    $('fee').value = PACKAGE.fee; $('compost-price').value = PACKAGE.compostPrice;
-    updateEstimate();
-    $('calculator').scrollIntoView({behavior:reduced.matches ? 'auto' : 'smooth'});
-  });
-  ['families','people','spend','quote','hrt','rate','operator','maint','tariff','outside','fee','compost-price'].forEach(id => $(id).addEventListener('input', updateEstimate));
+  ['families','people','quote','hrt','rate','operator','maint','outside'].forEach(id => $(id).addEventListener('input', updateEstimate));
   $('thick').addEventListener('change', updateEstimate);
   document.querySelectorAll('input[name="perf"]').forEach(radio => radio.addEventListener('change', updateEstimate));
-  ['alt-capex','alt-opex'].forEach(id => $(id).addEventListener('input', updateEstimate));
   updateEstimate();
   const diagram = $('loop-diagram');
   const paths = [...diagram.querySelectorAll('.flow-paths path')];
@@ -241,7 +195,7 @@
     if (open && !reduced.matches && body.animate) body.animate([{opacity:0,transform:'translateY(-8px)'},{opacity:1,transform:'none'}],{duration:350,easing:ease});
   }));
   // Live resource figures for 1,000 families at field-proven output.
-  const ref = calculate(1000, 4.5, {setup:'hybrid', spend:null, hrt:30, rate:15000, tariff:8, thick:false, outside:0, fee:0, compostPrice:0, perf:'field'});
+  const ref = calculate(1000, 4.5, {setup:'hybrid', hrt:30, rate:15000, thick:false, outside:0, perf:'field'});
   $('res-gas').textContent = fmt(ref.gas)+' m³'; $('res-power').textContent = fmt(ref.kwh)+' kWh'; $('res-compost').textContent = fmt(ref.compost)+' kg';
   // Clickable stages on the hero loop.
   const stages = {

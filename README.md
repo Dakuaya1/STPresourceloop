@@ -38,20 +38,13 @@ Official instructions: https://docs.github.com/en/pages/configuring-a-custom-dom
 
 ## Calculator notes
 
-The planner compares three setups (manual, hybrid, automated) and includes:
+The cost planner shows what the system costs and what it produces. It does not show payback or financial returns.
 
-- core system cost from the workbook, scaled by STP capacity;
-- digester and covered digestate tank volume sized from retention time (default 30 days) and daily feed, priced per m³ above the workbook's built-in 50 m³/MLD;
-- food-waste preparation (shredder line) and composting equipment;
-- an automation package for the hybrid and automated setups;
-- commissioning and start-up seeding;
-- yearly running costs: extra operator time, maintenance and spares, lab testing and consumables;
-- a gas-output basis: "Field-proven" (default, about 45% of design yield, matching Pune plant data) or "Design yield";
-- an optional comparison against the simplest legally compliant alternative;
-- value from net electricity (after the plant's own use), avoided disposal spend and fertilizer value.
+- Project cost (central estimate and range), cost per home, and a cost breakdown: core system, digester tanks sized from retention time, food-waste and compost equipment, automation (hybrid and automated setups) and commissioning with start-up seeding.
+- Yearly running cost (extra operator time, maintenance and spares, lab tests and consumables), also per family per month.
+- Daily outputs: biogas, net electricity and compost. Gas output defaults to the field-proven level of Indian plants (about 45% of design yield); "Design yield" is an option.
+- Optional inputs: thicker sludge, outside organic waste, vendor quote and the main assumptions.
 
-An "Improve the returns" block adds thicker sludge (smaller tanks), outside organic waste with a fee, and compost sales. A step-by-step table shows what each improvement adds, and a button applies the recommended package. Maintenance is charged on equipment rather than tanks, operator cost grows with tonnes handled, and food-waste equipment gets cheaper per kg above 1 tonne/day.
-
-Digester tank rate, automation packages, operator cost, maintenance rate and electricity value are planning placeholders. The advanced assumptions panel makes the main ones editable; replace them with vendor and site figures. Payback is simple and undiscounted, and excludes financing, taxes and major replacements. Carbon-credit revenue is excluded. Inputs outside 1,000–10,000 homes extrapolate the reference model. This is an early planning estimate, not a vendor quote or engineering design.
+Many cost figures are planning placeholders; replace them with vendor quotes. This is an early planning estimate, not a vendor quote or engineering design.
 
 The export contains only the standalone website and this guide. Existing hosting configuration, Git history, credentials and unused artwork are excluded.
